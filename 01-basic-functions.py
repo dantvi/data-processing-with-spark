@@ -45,20 +45,22 @@ non_null_pictures = listings.filter(col("picture_url").isNotNull()) \
 non_null_pictures.show(10, truncate=False)
 
 
-# In[14]:
+# In[16]:
 
 
 # 2. Get number of properties that get more than 10 reviews per month
-from pyspark.sql.functions import col
-
 num_props = listings.filter(col("reviews_per_month") > 10).count()
 print("Number of properties with > 10 reviews/month:", num_props)
 
 
-# In[6]:
+# In[17]:
 
 
 # 3. Get properties that have more bathrooms than bedrooms
+more_bath_than_bed = listings.filter(col("bathrooms") > col("bedrooms"))
+
+print("Properties with more bathrooms than bedrooms:", more_bath_than_bed.count())
+more_bath_than_bed.select("id", "name", "bathrooms", "bedrooms").show(10, truncate=False)
 
 
 # In[7]:
