@@ -63,11 +63,33 @@ print("Properties with more bathrooms than bedrooms:", more_bath_than_bed.count(
 more_bath_than_bed.select("id", "name", "bathrooms", "bedrooms").show(10, truncate=False)
 
 
-# In[7]:
+# In[20]:
+
+
+listings.select("price").where(col("price").isNotNull()).show(10, truncate=False)
+
+
+# In[21]:
 
 
 # 4. Get properties where the price is greater than 5,000. Collect the result as a Python list
 # Remember to convert a price into a number first!
+from pyspark.sql.functions import regexp_replace
+
+# Convert price from string to float
+listings_num = listings.withColumn(
+    "price_num",
+    regexp_replace(col("price"), "[$,]", "").cast("double")
+)
+
+# Filter on price > 5000
+expensive_props = listings_num.filter(col("price_num") > 5000)
+
+# Collect results as a Python list
+result = expensive_props.select("id", "name", "price_num").collect()
+
+print("Number of properties with price > 5000:", len(result))
+print(result[:5])
 
 
 # In[8]:
