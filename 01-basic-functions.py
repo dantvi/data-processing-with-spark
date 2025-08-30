@@ -85,7 +85,7 @@ listings_num = listings.withColumn(
 # Filter on price > 5000
 expensive_props = listings_num.filter(col("price_num") > 5000)
 
-# Collect results as a Python list
+# Collect the result as a Python list
 result = expensive_props.select("id", "name", "price_num").collect()
 
 print("Number of properties with price > 5000:", len(result))
@@ -108,19 +108,31 @@ filtered_props = listings_num.filter(
     (col("review_scores_rating") > 4.5)
 )
 
-# Collect as a Python list
+# Collect the result as a Python list
 result = filtered_props.select("id", "name", "price_num", "number_of_reviews", "review_scores_rating").collect()
 
 print("Number of matching properties:", len(result))
 print(result[:5])
 
 
-# In[10]:
+# In[16]:
 
 
 # 6. Get a list of properties with the following characteristics:
 # * price < 150 OR more than one bathroom
 # Use the "|" operator to implement the OR operator
+
+# Filter with price < 150 OR bathrooms > 1
+filtered_props_or = listings_num.filter(
+    (col("price_num") < 150) | 
+    (col("bathrooms") > 1)
+)
+
+# Collect the result as a Python list
+result_or = filtered_props_or.select("id", "name", "price_num", "bathrooms").collect()
+
+print("Number of matching properties (price < 150 OR bathrooms > 1):", len(result_or))
+print(result_or[:5])
 
 
 # In[11]:
