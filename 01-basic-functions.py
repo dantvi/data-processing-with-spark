@@ -135,11 +135,17 @@ print("Number of matching properties (price < 150 OR bathrooms > 1):", len(resul
 print(result_or[:5])
 
 
-# In[11]:
+# In[17]:
 
 
 # 7. Get the highest listing price in this dataset
 # Consider using the "max" function from "pyspark.sql.functions"
+from pyspark.sql.functions import max
+
+# Find the highest price in the dataset
+max_price = listings_num.agg(max("price_num")).collect()[0][0]
+
+print("Highest listing price:", max_price)
 
 
 # In[12]:
