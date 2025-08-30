@@ -45,7 +45,7 @@ non_null_pictures = listings.filter(col("picture_url").isNotNull()) \
 non_null_pictures.show(10, truncate=False)
 
 
-# In[16]:
+# In[5]:
 
 
 # 2. Get number of properties that get more than 10 reviews per month
@@ -53,7 +53,7 @@ num_props = listings.filter(col("reviews_per_month") > 10).count()
 print("Number of properties with > 10 reviews/month:", num_props)
 
 
-# In[17]:
+# In[6]:
 
 
 # 3. Get properties that have more bathrooms than bedrooms
@@ -63,13 +63,13 @@ print("Properties with more bathrooms than bedrooms:", more_bath_than_bed.count(
 more_bath_than_bed.select("id", "name", "bathrooms", "bedrooms").show(10, truncate=False)
 
 
-# In[20]:
+# In[7]:
 
 
 listings.select("price").where(col("price").isNotNull()).show(10, truncate=False)
 
 
-# In[21]:
+# In[8]:
 
 
 # 4. Get properties where the price is greater than 5,000. Collect the result as a Python list
@@ -92,7 +92,7 @@ print("Number of properties with price > 5000:", len(result))
 print(result[:5])
 
 
-# In[8]:
+# In[15]:
 
 
 # 5. Get a list of properties with the following characteristics:
@@ -101,8 +101,21 @@ print(result[:5])
 # * review_scores_rating > 4.5
 # Consider using the "&" operator
 
+# Filter by all three conditions
+filtered_props = listings_num.filter(
+    (col("price_num") < 150) &
+    (col("number_of_reviews") > 20) &
+    (col("review_scores_rating") > 4.5)
+)
 
-# In[9]:
+# Collect as a Python list
+result = filtered_props.select("id", "name", "price_num", "number_of_reviews", "review_scores_rating").collect()
+
+print("Number of matching properties:", len(result))
+print(result[:5])
+
+
+# In[10]:
 
 
 # 6. Get a list of properties with the following characteristics:
@@ -110,27 +123,27 @@ print(result[:5])
 # Use the "|" operator to implement the OR operator
 
 
-# In[10]:
+# In[11]:
 
 
 # 7. Get the highest listing price in this dataset
 # Consider using the "max" function from "pyspark.sql.functions"
 
 
-# In[11]:
+# In[12]:
 
 
 # 8. Get the name and a price of property with the highest price
 # Try to use "collect" method to get the highest price first, and then use it in a "filter" call 
 
 
-# In[12]:
+# In[13]:
 
 
 # 9. Get the number of hosts in the dataset
 
 
-# In[13]:
+# In[14]:
 
 
 # 10. Get listings with a first review in 2024
