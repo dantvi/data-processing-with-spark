@@ -178,11 +178,19 @@ num_hosts = listings.select(countDistinct(col("host_id"))).collect()[0][0]
 print("Number of hosts in the dataset:", num_hosts)
 
 
-# In[14]:
+# In[17]:
 
 
 # 10. Get listings with a first review in 2024
 # Consider using the "year" function from "pyspark.sql.functions"
+
+from pyspark.sql.functions import year
+
+# Filter on first_review in the year 2024
+listings_2024 = listings.filter(year(col("first_review")) == 2024)
+
+print("Number of listings with first review in 2024:", listings_2024.count())
+listings_2024.select("id", "name", "first_review").show(10, truncate=False)
 
 
 # In[ ]:
