@@ -92,7 +92,7 @@ print("Number of properties with price > 5000:", len(result))
 print(result[:5])
 
 
-# In[15]:
+# In[9]:
 
 
 # 5. Get a list of properties with the following characteristics:
@@ -115,7 +115,7 @@ print("Number of matching properties:", len(result))
 print(result[:5])
 
 
-# In[16]:
+# In[10]:
 
 
 # 6. Get a list of properties with the following characteristics:
@@ -135,7 +135,7 @@ print("Number of matching properties (price < 150 OR bathrooms > 1):", len(resul
 print(result_or[:5])
 
 
-# In[17]:
+# In[11]:
 
 
 # 7. Get the highest listing price in this dataset
@@ -148,11 +148,21 @@ max_price = listings_num.agg(max("price_num")).collect()[0][0]
 print("Highest listing price:", max_price)
 
 
-# In[12]:
+# In[15]:
 
 
 # 8. Get the name and a price of property with the highest price
 # Try to use "collect" method to get the highest price first, and then use it in a "filter" call 
+
+# Filter properties with the highest price
+highest_props = listings_num.filter(col("price_num") == max_price)
+
+# Select name and price and collect as a Python list
+result = highest_props.select("id", "name", "price_num").collect()
+
+print("Number of properties with highest price:", len(result))
+for r in result:
+    print(f"ID: {r['id']}, Name: {r['name']}, Price: {r['price_num']}")
 
 
 # In[13]:
