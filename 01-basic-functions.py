@@ -165,10 +165,17 @@ for r in result:
     print(f"ID: {r['id']}, Name: {r['name']}, Price: {r['price_num']}")
 
 
-# In[13]:
+# In[16]:
 
 
 # 9. Get the number of hosts in the dataset
+
+from pyspark.sql.functions import countDistinct
+
+# Count number of unique hosts
+num_hosts = listings.select(countDistinct(col("host_id"))).collect()[0][0]
+
+print("Number of hosts in the dataset:", num_hosts)
 
 
 # In[14]:
