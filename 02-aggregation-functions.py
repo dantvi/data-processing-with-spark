@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[9]:
+# In[11]:
 
 
 from pyspark.sql import SparkSession
@@ -12,7 +12,7 @@ spark = SparkSession.builder \
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# In[10]:
+# In[2]:
 
 
 listings = spark.read.csv("data/listings.csv", 
@@ -27,7 +27,7 @@ listings = spark.read.csv("data/listings.csv",
 listings.printSchema()
 
 
-# In[11]:
+# In[3]:
 
 
 reviews = spark.read.csv("data/reviews.csv", 
@@ -46,27 +46,36 @@ reviews.printSchema()
 
 
 # 1. Count the number of reviews per listing using the "reviews" dataset
+from pyspark.sql.functions import col
+
+# Count reviews per listing_id
+reviews_per_listing = reviews.groupBy("listing_id").count() \
+    .withColumnRenamed("count", "number_of_reviews") \
+    .orderBy(col("number_of_reviews").desc())
+
+print("Number of listings with at least one review:", reviews_per_listing.count())
+reviews_per_listing.show(10, truncate=False)
 
 
-# In[13]:
+# In[5]:
 
 
 # 2. Compute the total number of listings and average review score per host
 
 
-# In[14]:
+# In[6]:
 
 
 # 3: Find the top ten listings with the highest number of reviews
 
 
-# In[15]:
+# In[7]:
 
 
 # 4. Find the top five neighborhoods with the most listings
 
 
-# In[16]:
+# In[8]:
 
 
 # 5. Get a data frame with the following four columns:
@@ -77,14 +86,14 @@ reviews.printSchema()
 # Use "join" to combine data from two datasets
 
 
-# In[17]:
+# In[9]:
 
 
 # 6.Get top five listings with the highest average review comment length. Only return listings with at least 5 reviews
 # Use the "length" function from the "pyspark.sql.functions" to get a lenght of a review
 
 
-# In[18]:
+# In[10]:
 
 
 # 7. Using the "join" operator find listings without reviews.
