@@ -42,7 +42,7 @@ reviews = spark.read.csv("data/reviews.csv",
 reviews.printSchema()
 
 
-# In[12]:
+# In[4]:
 
 
 # 1. Count the number of reviews per listing using the "reviews" dataset
@@ -57,10 +57,20 @@ print("Number of listings with at least one review:", reviews_per_listing.count(
 reviews_per_listing.show(10, truncate=False)
 
 
-# In[5]:
+# In[12]:
 
 
 # 2. Compute the total number of listings and average review score per host
+from pyspark.sql.functions import countDistinct, avg
+
+# Compute number of listings and average review score per host
+host_stats = listings.groupBy("host_id").agg(
+    countDistinct("id").alias("total_listings"),
+    avg("review_scores_rating").alias("avg_review_score")
+).orderBy(col("total_listings").desc())
+
+print("Number of hosts with at least one listing:", host_stats.count())
+host_stats.show(10, truncate=False)
 
 
 # In[6]:
