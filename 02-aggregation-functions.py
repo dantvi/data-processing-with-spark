@@ -57,7 +57,7 @@ print("Number of listings with at least one review:", reviews_per_listing.count(
 reviews_per_listing.show(10, truncate=False)
 
 
-# In[12]:
+# In[5]:
 
 
 # 2. Compute the total number of listings and average review score per host
@@ -73,10 +73,25 @@ print("Number of hosts with at least one listing:", host_stats.count())
 host_stats.show(10, truncate=False)
 
 
-# In[6]:
+# In[12]:
 
 
 # 3: Find the top ten listings with the highest number of reviews
+
+# Count reviews per listing_id and join to get listing name
+top10_reviews = (
+    reviews.groupBy("listing_id").count()
+    .withColumnRenamed("count", "number_of_reviews")
+    .join(
+        listings.select(col("id").alias("listing_id"), "name"),
+        on="listing_id",
+        how="left"
+    )
+    .orderBy(col("number_of_reviews").desc(), col("listing_id").asc())
+)
+
+print("Top 10 listings by number of reviews:")
+top10_reviews.select("listing_id", "name", "number_of_reviews").show(10, truncate=False)
 
 
 # In[7]:
