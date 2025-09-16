@@ -138,11 +138,33 @@ print("Sample of listing/review combinations:")
 result_df.show(10, truncate=False)
 
 
-# In[9]:
+# In[13]:
 
 
 # 6.Get top five listings with the highest average review comment length. Only return listings with at least 5 reviews
 # Use the "length" function from the "pyspark.sql.functions" to get a lenght of a review
+from pyspark.sql.functions import length, count
+
+# Use only non-empty comments
+reviews_len = reviews.select("listing_id", "comments") \
+    .filter(col("comments").isNotNull() & (trim(col("comments")) != "")) \
+    .withColumn("comment_length", length(col("comments")))
+
+# Aggregate per listing: average length + review count
+agg_len = reviews_len.groupBy("listing_id").agg(
+    avg("comment_length").alias("avg_comment_length"),
+    count("*").alias("review_count")
+).filter(col("review_count") >= 5)
+
+# Join listing names and get top 5 by avg length
+top5_longest = agg_len.join(
+    listings.select(col("id").alias("listing_id"), "name"),
+    on="listing_id",
+    how="left"
+).orderBy(col("avg_comment_length").desc(), col("listing_id").asc())
+
+print("Top 5 listings by average review comment length (min 5 reviews):")
+top5_longest.select("listing_id", "name", "avg_comment_length", "review_count").show(5, truncate=False)
 
 
 # In[10]:
