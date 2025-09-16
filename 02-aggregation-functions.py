@@ -94,7 +94,7 @@ print("Top 10 listings by number of reviews:")
 top10_reviews.select("listing_id", "name", "number_of_reviews").show(10, truncate=False)
 
 
-# In[12]:
+# In[7]:
 
 
 # 4. Find the top five neighborhoods with the most listings
@@ -112,7 +112,7 @@ print("Top 5 neighbourhoods by listings:")
 top5_neighbourhoods.show(5, truncate=False)
 
 
-# In[8]:
+# In[12]:
 
 
 # 5. Get a data frame with the following four columns:
@@ -121,6 +121,21 @@ top5_neighbourhoods.show(5, truncate=False)
 # * Reviewer's name
 # * Review's comment
 # Use "join" to combine data from two datasets
+from pyspark.sql.functions import trim
+
+# Select only needed columns
+listings_sel = listings.select(col("id").alias("listing_id"), "name")
+reviews_sel = reviews.select("listing_id", "reviewer_name", "comments") \
+    .filter(col("comments").isNotNull() & (trim(col("comments")) != ""))
+
+# Inner join on listing_id
+joined_df = listings_sel.join(reviews_sel, on="listing_id", how="inner")
+
+# Final selection
+result_df = joined_df.select("listing_id", "name", "reviewer_name", "comments")
+
+print("Sample of listing/review combinations:")
+result_df.show(10, truncate=False)
 
 
 # In[9]:
