@@ -73,7 +73,7 @@ print("Number of hosts with at least one listing:", host_stats.count())
 host_stats.show(10, truncate=False)
 
 
-# In[12]:
+# In[6]:
 
 
 # 3: Find the top ten listings with the highest number of reviews
@@ -94,10 +94,22 @@ print("Top 10 listings by number of reviews:")
 top10_reviews.select("listing_id", "name", "number_of_reviews").show(10, truncate=False)
 
 
-# In[7]:
+# In[12]:
 
 
 # 4. Find the top five neighborhoods with the most listings
+
+top5_neighbourhoods = (
+    listings
+        .filter(col("neighbourhood_cleansed").isNotNull())
+        .groupBy("neighbourhood_cleansed")
+        .count()
+        .withColumnRenamed("count", "listings_count")
+        .orderBy(col("listings_count").desc(), col("neighbourhood_cleansed").asc())
+)
+
+print("Top 5 neighbourhoods by listings:")
+top5_neighbourhoods.show(5, truncate=False)
 
 
 # In[8]:
