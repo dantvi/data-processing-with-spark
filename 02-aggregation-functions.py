@@ -167,11 +167,20 @@ print("Top 5 listings by average review comment length (min 5 reviews):")
 top5_longest.select("listing_id", "name", "avg_comment_length", "review_count").show(5, truncate=False)
 
 
-# In[10]:
+# In[14]:
 
 
 # 7. Using the "join" operator find listings without reviews.
 # Hint: Use "left_join" or "left_anti" join type when implementing this
+
+no_reviews = listings.join(
+    reviews,
+    listings.id == reviews.listing_id,
+    how="left_anti"
+)
+
+print("Number of listings without reviews:", no_reviews.count())
+no_reviews.select("id", "name").show(10, truncate=False)
 
 
 # In[ ]:
