@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[2]:
 
 
 from pyspark.sql import SparkSession
@@ -11,10 +11,10 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 
-# In[ ]:
+# In[3]:
 
 
-listings = spark.read.csv("../data/listings.csv.gz", 
+listings = spark.read.csv("data/listings.csv", 
     header=True,
     inferSchema=True,
     sep=",", 
@@ -26,10 +26,10 @@ listings = spark.read.csv("../data/listings.csv.gz",
 listings.printSchema()
 
 
-# In[ ]:
+# In[4]:
 
 
-reviews = spark.read.csv("../data/reviews.csv.gz", 
+reviews = spark.read.csv("data/reviews.csv", 
     header=True,
     inferSchema=True,
     sep=",",
@@ -41,7 +41,7 @@ reviews = spark.read.csv("../data/reviews.csv.gz",
 reviews.printSchema()
 
 
-# In[ ]:
+# In[6]:
 
 
 # 1. For each listing compute string category depending on its price, and add it as a new column.
@@ -54,12 +54,53 @@ reviews.printSchema()
 # Only include listings where the price is not null.
 # Count the number of listings in each category
 
-from pyspark.sql.functions import regexp_replace
+from pyspark.sql.functions import col, regexp_replace, udf
+from pyspark.sql.types import StringType
 
-listings = listings.withColumn('price_numeric', regexp_replace('price', '[$,]', '').cast('float'))
+# 1) Price -> numeric
+listings_num = listings.withColumn(
+    "price_numeric",
+    regexp_replace(col("price"), "[$,]", "").cast("double")
+)
 
-# TODO: Implement a UDF
-# TODO: Apply the UDF to create a new DataFrame
+# 2) UDF for price category
+def price_category(p):
+    if p is None:
+        return None
+    if p < 50:
+        return "Budget"
+    elif p < 150:
+        return "Mid-range"
+    else:
+        return "Luxury"
+
+price_category_udf = udf(price_category, StringType())
+
+# 3) Filter out null prices and apply the UDF
+with_category = (
+    listings_num
+    .filter(col("price_numeric").isNotNull())
+    .withColumn("price_category", price_category_udf(col("price_numeric")))
+)
+
+# 4) Count number of listings per category (optional order)
+from pyspark.sql.functions import when as sf_when
+
+category_counts = (
+    with_category.groupBy("price_category").count()
+    .withColumn(
+        "order_key",
+        sf_when(col("price_category") == "Budget", 0)
+        .when(col("price_category") == "Mid-range", 1)
+        .otherwise(2)
+    )
+    .orderBy("order_key")
+    .drop("order_key")
+)
+
+# Quick check
+with_category.select("id", "price", "price_numeric", "price_category").show(10, truncate=False)
+category_counts.show(truncate=False)
 
 
 # In[ ]:
