@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[7]:
 
 
 from pyspark.sql import SparkSession
@@ -11,7 +11,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 
-# In[3]:
+# In[2]:
 
 
 listings = spark.read.csv("data/listings.csv", 
@@ -26,7 +26,7 @@ listings = spark.read.csv("data/listings.csv",
 listings.printSchema()
 
 
-# In[4]:
+# In[3]:
 
 
 reviews = spark.read.csv("data/reviews.csv", 
@@ -41,7 +41,7 @@ reviews = spark.read.csv("data/reviews.csv",
 reviews.printSchema()
 
 
-# In[6]:
+# In[4]:
 
 
 # 1. For each listing compute string category depending on its price, and add it as a new column.
@@ -103,7 +103,7 @@ with_category.select("id", "price", "price_numeric", "price_category").show(10, 
 category_counts.show(truncate=False)
 
 
-# In[ ]:
+# In[8]:
 
 
 # 2. In this task you will need to compute a santiment score per review, and then an average sentiment score per listing.
@@ -115,7 +115,10 @@ category_counts.show(truncate=False)
 # To complete this task, compute a DataFrame that contains the following fields:
 # * name - the name of a listing
 # * average_sentiment - average sentiment of reviews computed using the algorithm described above
+
+from pyspark.sql.functions import avg
 from pyspark.sql.types import FloatType
+import re
 
 # Lists of positive and negative words
 positive_words = {'good', 'great', 'excellent', 'amazing', 'fantastic', 'wonderful', 'pleasant', 'lovely', 'nice', 'enjoyed'}
@@ -123,20 +126,34 @@ negative_words = {'bad', 'terrible', 'awful', 'horrible', 'disappointing', 'poor
 
 # TODO: Implement the UDF
 def sentiment_score(comment):
-    pass
+    if comment is None:
+        return None
+    # tokenize into alphabetic words, case-insensitive
+    tokens = re.findall(r"[a-z]+", comment.lower())
+    pos = sum(1 for t in tokens if t in positive_words)
+    neg = sum(1 for t in tokens if t in negative_words)
+    return float(pos - neg)
 
 sentiment_score_udf = udf(sentiment_score, FloatType())
 
-reviews_with_sentiment = reviews \
-  .withColumn(
-    'sentiment_score',
-    sentiment_score_udf(reviews.comments)
-  )
+# Apply UDF per review
+reviews_with_sentiment = reviews.where(col("comments").isNotNull()).withColumn(
+    "sentiment_score", sentiment_score_udf(col("comments"))
+)
 
-# TODO: Create a final DataFrame
+# TODO: Create the final DataFrame
+# (join with listings to get 'name', compute average per listing)
+avg_sentiment_per_listing = (
+    reviews_with_sentiment.join(listings.select(col("id").alias("listing_id"), "name"), on="listing_id", how="inner")
+    .groupBy("name")
+    .agg(avg("sentiment_score").alias("average_sentiment"))
+)
+
+# Example: show top 10 most positive listings based on average score
+avg_sentiment_per_listing.orderBy(col("average_sentiment").desc()).show(10, truncate=False)
 
 
-# In[ ]:
+# In[6]:
 
 
 # 3. Rewrite the following code from the previous exercise using SparkSQL:
