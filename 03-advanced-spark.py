@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[7]:
+# In[3]:
 
 
 from pyspark.sql import SparkSession
@@ -11,7 +11,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 
-# In[2]:
+# In[4]:
 
 
 listings = spark.read.csv("data/listings.csv", 
@@ -26,7 +26,7 @@ listings = spark.read.csv("data/listings.csv",
 listings.printSchema()
 
 
-# In[3]:
+# In[5]:
 
 
 reviews = spark.read.csv("data/reviews.csv", 
@@ -41,7 +41,7 @@ reviews = spark.read.csv("data/reviews.csv",
 reviews.printSchema()
 
 
-# In[4]:
+# In[6]:
 
 
 # 1. For each listing compute string category depending on its price, and add it as a new column.
@@ -57,13 +57,13 @@ reviews.printSchema()
 from pyspark.sql.functions import col, regexp_replace, udf
 from pyspark.sql.types import StringType
 
-# 1) Price -> numeric
+# Price -> numeric
 listings_num = listings.withColumn(
     "price_numeric",
     regexp_replace(col("price"), "[$,]", "").cast("double")
 )
 
-# 2) UDF for price category
+# UDF for price category
 def price_category(p):
     if p is None:
         return None
@@ -76,14 +76,14 @@ def price_category(p):
 
 price_category_udf = udf(price_category, StringType())
 
-# 3) Filter out null prices and apply the UDF
+# Filter out null prices and apply the UDF
 with_category = (
     listings_num
     .filter(col("price_numeric").isNotNull())
     .withColumn("price_category", price_category_udf(col("price_numeric")))
 )
 
-# 4) Count number of listings per category (optional order)
+# Count number of listings per category (optional order)
 from pyspark.sql.functions import when as sf_when
 
 category_counts = (
@@ -103,7 +103,7 @@ with_category.select("id", "price", "price_numeric", "price_category").show(10, 
 category_counts.show(truncate=False)
 
 
-# In[8]:
+# In[7]:
 
 
 # 2. In this task you will need to compute a santiment score per review, and then an average sentiment score per listing.
@@ -153,7 +153,7 @@ avg_sentiment_per_listing = (
 avg_sentiment_per_listing.orderBy(col("average_sentiment").desc()).show(10, truncate=False)
 
 
-# In[6]:
+# In[9]:
 
 
 # 3. Rewrite the following code from the previous exercise using SparkSQL:
@@ -179,14 +179,23 @@ avg_sentiment_per_listing.orderBy(col("average_sentiment").desc()).show(10, trun
 reviews.createOrReplaceTempView("reviews")
 listings.createOrReplaceTempView("listings")
 
-# Write the SQL query
 sql_query = """
-...
+SELECT
+  l.id   AS listing_id,
+  l.name AS name,
+  AVG(LENGTH(r.comments)) AS average_comment_length,
+  COUNT(r.id)             AS reviews_count
+FROM reviews r
+JOIN listings l
+  ON r.listing_id = l.id
+WHERE r.comments IS NOT NULL
+GROUP BY l.id, l.name
+HAVING COUNT(r.id) >= 5
+ORDER BY average_comment_length DESC
+LIMIT 5
 """
 
-spark \
-  .sql(sql_query) \
-  .show()
+spark.sql(sql_query).show(truncate=False)
 
 
 # In[ ]:
