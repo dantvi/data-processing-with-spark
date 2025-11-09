@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[3]:
+# In[22]:
 
 
 from pyspark.sql import SparkSession
@@ -11,7 +11,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 
-# In[4]:
+# In[23]:
 
 
 listings = spark.read.csv("data/listings.csv", 
@@ -26,7 +26,7 @@ listings = spark.read.csv("data/listings.csv",
 listings.printSchema()
 
 
-# In[5]:
+# In[24]:
 
 
 reviews = spark.read.csv("data/reviews.csv", 
@@ -41,7 +41,7 @@ reviews = spark.read.csv("data/reviews.csv",
 reviews.printSchema()
 
 
-# In[6]:
+# In[25]:
 
 
 # 1. For each listing compute string category depending on its price, and add it as a new column.
@@ -103,7 +103,7 @@ with_category.select("id", "price", "price_numeric", "price_category").show(10, 
 category_counts.show(truncate=False)
 
 
-# In[7]:
+# In[26]:
 
 
 # 2. In this task you will need to compute a santiment score per review, and then an average sentiment score per listing.
@@ -153,7 +153,7 @@ avg_sentiment_per_listing = (
 avg_sentiment_per_listing.orderBy(col("average_sentiment").desc()).show(10, truncate=False)
 
 
-# In[9]:
+# In[27]:
 
 
 # 3. Rewrite the following code from the previous exercise using SparkSQL:
@@ -198,11 +198,11 @@ LIMIT 5
 spark.sql(sql_query).show(truncate=False)
 
 
-# In[ ]:
+# In[28]:
 
 
 # 4. [Optional][Challenge]
-# Calculate an average time passed from the first review for each host in the listings dataset. 
+# Calculate an average time passed from the first review for each listing in the listings dataset. 
 # To implmenet a custom aggregation function you would need to use "pandas_udf" function to write a custom aggregation function.
 #
 # Documentation about "pandas_udf": https://spark.apache.org/docs/3.4.2/api/python/reference/pyspark.sql/api/pyspark.sql.functions.pandas_udf.html 
@@ -220,17 +220,63 @@ from pyspark.sql.functions import PandasUDFType
 import pandas as pd
 
 @pandas_udf(DoubleType(), functionType=PandasUDFType.GROUPED_AGG)
-def average_days_since_first_review_udf(first_review_series) -> float:
-    # TODO: Implement the UDF
-    pass
+def average_listing_age_udf(first_review_series) -> float:
+    # Business-style: "How old are this host's listings, on average, as of today?"
+    today = pd.to_datetime('today')
+    listing_ages = (today - pd.to_datetime(first_review_series)).dt.days
+    if listing_ages.empty:
+        return float('nan')
+    return float(listing_ages.mean())
 
-listings \
-  .filter(
-    listings.first_review.isNotNull()
-  ) \
-  .groupBy('host_id') \
-  .agg(
-    average_days_since_first_review_udf(listings.first_review).alias('average_days_since_first_review_days')
-  ) \
-  .show()
+host_listing_age_df = (
+    listings
+    .filter(col("first_review").isNotNull())
+    .groupBy("host_id")
+    .agg(
+        average_listing_age_udf(col("first_review"))
+        .alias("average_listing_age_days")
+    )
+)
+
+host_listing_age_df.show(truncate=False)
+
+
+# In[29]:
+
+
+@pandas_udf(DoubleType(), functionType=PandasUDFType.GROUPED_AGG)
+def listing_time_spread_udf(first_review_series) -> float:
+    # Analytical-style: "Relative to this host's first-ever review, how spread out are their other listings?"
+    dates = pd.to_datetime(first_review_series.dropna())
+    if dates.empty:
+        return float('nan')
+    host_earliest = dates.min()
+    deltas = (dates - host_earliest).dt.days
+    return float(deltas.mean())
+
+host_listing_spread_df = (
+    listings
+    .filter(col("first_review").isNotNull())
+    .groupBy("host_id")
+    .agg(
+        listing_time_spread_udf(col("first_review"))
+        .alias("average_listing_spread_days")
+    )
+)
+
+host_listing_spread_df.show(truncate=False)
+
+
+# In[31]:
+
+
+host_listing_age_df.join(host_listing_spread_df, "host_id", "inner") \
+    .orderBy(col("average_listing_age_days").desc()) \
+    .show(truncate=False)
+
+
+# In[ ]:
+
+
+
 
